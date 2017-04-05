@@ -3,19 +3,25 @@ module Spruce exposing (..)
 {-| Description description description. Do it later, but don't forget!
 
 # Basics
-@docs serve
+@docs Server, listen
 
 -}
 
 import Spruce.Server exposing (..)
 
 
+{-| Server
+-}
+type alias Server =
+    Program Never Model Msg
+
+
 {-| Create a basic server which uses middleware to handle requests
 -}
-serve : List Middleware -> Config -> Program Never Model Msg
-serve middleware config =
+listen : String -> List Middleware -> Server
+listen address middleware =
     Platform.program
-        { init = initialState middleware config
-        , update = handleRequest middleware config
+        { init = initialState address middleware
+        , update = handleRequest middleware
         , subscriptions = \model -> Sub.none
         }

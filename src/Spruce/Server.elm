@@ -1,8 +1,6 @@
-module Spruce.Server exposing (..)
+port module Spruce.Server exposing (..)
 
-
-type alias Config =
-    { bind : String }
+import Json.Decode
 
 
 type Middleware
@@ -10,7 +8,7 @@ type Middleware
 
 
 type alias Model =
-    { config : Config }
+    { }
 
 
 type Msg
@@ -21,18 +19,17 @@ type alias Updater =
     Msg -> Model -> ( Model, Cmd Msg )
 
 
-initialState : List Middleware -> Config -> ( Model, Cmd Msg )
-initialState middleware config =
-    let
-        model =
-            { config = config }
-
-        cmd =
-            Cmd.none
-    in
-        ( model, cmd )
+initialState : String -> List Middleware -> ( Model, Cmd Msg )
+initialState address middleware =
+    ( {}, startListening address )
 
 
-handleRequest : List Middleware -> Config -> Updater
-handleRequest middleware config =
+handleRequest : List Middleware -> Updater
+handleRequest middleware  =
     \msg model -> ( model, Cmd.none )
+
+
+port startListening : String -> Cmd msg
+
+
+port onRequest : (() -> msg) -> Sub msg
