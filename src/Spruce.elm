@@ -8,6 +8,7 @@ module Spruce exposing (..)
 -}
 
 import Spruce.Server exposing (..)
+import Native.Spruce
 
 
 {-| Server
@@ -20,8 +21,8 @@ type alias Server =
 -}
 listen : String -> List Middleware -> Server
 listen address middleware =
-    Platform.program
+     Platform.program
         { init = initialState address middleware
         , update = handleRequest middleware
         , subscriptions = \model -> Sub.none
-        }
+        } |> Native.Spruce.listen address

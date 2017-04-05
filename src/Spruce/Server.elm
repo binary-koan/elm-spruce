@@ -1,6 +1,12 @@
-port module Spruce.Server exposing (..)
+effect module Spruce.Server where { subscription = MySub } exposing (..)
 
-import Json.Decode
+import Process
+import Dict
+import Task exposing (Task)
+
+
+type MySub msg
+    = RequestReceived msg
 
 
 type Middleware
@@ -8,7 +14,7 @@ type Middleware
 
 
 type alias Model =
-    { }
+    {}
 
 
 type Msg
@@ -21,15 +27,45 @@ type alias Updater =
 
 initialState : String -> List Middleware -> ( Model, Cmd Msg )
 initialState address middleware =
-    ( {}, startListening address )
+    ( {}, Cmd.none )
 
 
 handleRequest : List Middleware -> Updater
-handleRequest middleware  =
+handleRequest middleware =
     \msg model -> ( model, Cmd.none )
 
 
-port startListening : String -> Cmd msg
+
+-- Effect module stuff
 
 
-port onRequest : (() -> msg) -> Sub msg
+type alias State msg =
+  Dict.Dict String (Watcher msg)
+
+
+type alias Watcher msg =
+  { taggers : List (String -> msg)
+  , pid : Process.Id
+  }
+
+
+init : Task Never (State msg)
+init =
+  Task.succeed Dict.empty
+
+
+
+subMap : (a -> b) -> MySub a -> MySub b
+subMap fn sub =
+    case sub of
+        RequestReceived req ->
+            RequestReceived (fn req)
+
+onEffects : Platform.Router msg Msg -> List (MySub msg) -> State msg -> Task Never (State msg)
+onEffects router newSubs oldState =
+    Task.succeed Dict.empty
+
+
+onSelfMsg : Platform.Router msg Msg -> Msg -> State msg -> Task Never (State msg)
+onSelfMsg router msg state =
+    Task.succeed state
