@@ -23,6 +23,6 @@ listen : String -> List Middleware -> Server
 listen address middleware =
      Platform.program
         { init = initialState address middleware
-        , update = handleRequest middleware
-        , subscriptions = \model -> Sub.none
+        , update = updater middleware
+        , subscriptions = handleEvents middleware
         } |> Native.Spruce.listen address
