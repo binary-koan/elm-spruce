@@ -25,4 +25,4 @@ listen address middleware =
         { init = initialState address middleware
         , update = updater middleware
         , subscriptions = handleEvents middleware
-        } |> Native.Spruce.listen address
+        }

@@ -1,16 +1,13 @@
 const _binary_koan$elm_spruce$Native_Spruce = function() {
     const http = require("http")
 
-    function listen(address, program) {
-        console.log(address)
-
-        return program
+    function explode(message) {
+        //TODO handle subs properly
+        throw message
     }
 
-    function listen(address, program)
-    {
-        return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
-        {
+    function listen(address, program) {
+        return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback) {
             const server = http
 
             try
@@ -47,6 +44,7 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     }
 
     return {
+        explode: explode,
         listen: F2(listen)
     }
 }()

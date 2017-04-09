@@ -1,12 +1,14 @@
 effect module Spruce.Server where { subscription = MySub } exposing (..)
 
 import Process
-import Dict
 import Task exposing (Task)
 
 
 -- TEMPORARY, until I figure out what format to use for requests
-type alias Request = String
+
+
+type alias Request =
+    String
 
 
 type MySub msg
@@ -14,7 +16,7 @@ type MySub msg
 
 
 type Middleware
-    = Nothing
+    = EmptyMiddleware
 
 
 type alias Model =
@@ -42,8 +44,9 @@ updater middleware =
 
 
 handleEvents : String -> List Middleware -> Sub Msg
-handleEvents address middleware
-    = subscription (Listen address OnRequest)
+handleEvents address middleware =
+    subscription (Listen address OnRequest)
+
 
 handleListenResult : Result CannotStartReason () -> Msg
 handleListenResult result =
@@ -64,19 +67,15 @@ type CannotStartReason
     | UnknownError
 
 
-listen : String -> Platform.Router msg Msg -> Task CannotStartReason ()
-listen address router =
-    Native.Spruce.listen address
-        { onRequest = \req -> Platform.sendToSelf router (OnRequest req)
-        }
-
-
 
 -- Effect module stuff
 
 
 type alias State msg =
-    Dict.Dict String (Watcher msg)
+    { serverStarted : Bool
+    , sub : Maybe (Request -> msg)
+    , pid : Maybe Process.Id
+    }
 
 
 type alias Watcher msg =
@@ -87,7 +86,7 @@ type alias Watcher msg =
 
 init : Task Never (State msg)
 init =
-    Task.succeed Dict.empty
+    Task.succeed { serverStarted = False, sub = Nothing, pid = Nothing }
 
 
 subMap : (a -> b) -> MySub a -> MySub b
@@ -99,9 +98,49 @@ subMap fn sub =
 
 onEffects : Platform.Router msg Msg -> List (MySub msg) -> State msg -> Task Never (State msg)
 onEffects router newSubs oldState =
-    Task.succeed Dict.empty
+    let
+        ( address, sub ) =
+            case List.head newSubs of
+                Just (Listen address sub) ->
+                    ( address, Just sub )
+
+                Nothing ->
+                    ( "", Nothing )
+    in
+        if List.length newSubs /= 1 || oldState.serverStarted then
+            Native.Spruce.explode "You need to start exactly one server right now ..."
+        else
+            attemptListen router address
+                |> Task.andThen (\pid -> Task.succeed { serverStarted = True, sub = sub, pid = Just pid })
 
 
 onSelfMsg : Platform.Router msg Msg -> Msg -> State msg -> Task Never (State msg)
 onSelfMsg router msg state =
     Task.succeed state
+
+
+
+--
+
+
+attemptListen : Platform.Router msg Msg -> String -> Task x Process.Id
+attemptListen router address =
+    let
+        goodOpen ws =
+            Platform.sendToSelf router NoOp
+
+        badOpen _ =
+            Platform.sendToSelf router (CannotStartServer UnknownError)
+
+        actuallyAttemptListen =
+            listen address router
+                |> Task.andThen goodOpen
+                |> Task.onError badOpen
+    in
+        Process.spawn actuallyAttemptListen
+
+
+listen : String -> Platform.Router msg Msg -> Task x Process.Id
+listen address router =
+    Native.Spruce.listen
+        { onRequest = \req -> Platform.sendToSelf router (OnRequest req) }
