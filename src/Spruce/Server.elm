@@ -132,5 +132,5 @@ attemptListen router address =
 
 listen : String -> Platform.Router msg Msg -> Task x Process.Id
 listen address router =
-    Native.Spruce.listen
+    Native.Spruce.listen address
         { onRequest = \req -> Platform.sendToSelf router (OnRequest req) }

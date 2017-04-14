@@ -4479,40 +4479,20 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
         throw message
     }
 
-    function listen(address, program) {
+    function listen(address, settings) {
         return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback) {
-            const server = http
+            const server = http.createServer((request, response) => {
+                console.log(settings.onRequest(request.url))
 
-            try
-            {
-                var socket = new WebSocket(url);
-                socket.elm_web_socket = true;
-            }
-            catch(err)
-            {
-                return callback(_elm_lang$core$Native_Scheduler.fail({
-                    ctor: err.name === 'SecurityError' ? 'BadSecurity' : 'BadArgs',
-                    _0: err.message
-                }));
-            }
+                _elm_lang$core$Native_Scheduler.rawSpawn(settings.onRequest(request.url))
+            })
 
-            socket.addEventListener("open", function(event) {
-                callback(_elm_lang$core$Native_Scheduler.succeed(socket));
-            });
+            const [hostname, port] = address.split(":")
 
-            socket.addEventListener("message", function(event) {
-                _elm_lang$core$Native_Scheduler.rawSpawn(A2(settings.onMessage, socket, event.data));
-            });
-
-            socket.addEventListener("close", function(event) {
-                _elm_lang$core$Native_Scheduler.rawSpawn(settings.onClose({
-                    code: event.code,
-                    reason: event.reason,
-                    wasClean: event.wasClean
-                }));
-            });
-
-            return program;
+            server.listen(port, () => {
+                console.log(`Listening on port ${port}`)
+                callback(_elm_lang$core$Native_Scheduler.succeed(null))
+            })
         });
     }
 
@@ -4554,7 +4534,10 @@ var _elm_lang$core$Tuple$first = function (_p6) {
 
 var _binary_koan$elm_spruce$Spruce_Server$onSelfMsg = F3(
 	function (router, msg, state) {
-		return _elm_lang$core$Task$succeed(state);
+		return A2(
+			_elm_lang$core$Debug$log,
+			'selfMsg',
+			_elm_lang$core$Task$succeed(state));
 	});
 var _binary_koan$elm_spruce$Spruce_Server$init = _elm_lang$core$Task$succeed(
 	{serverStarted: false, sub: _elm_lang$core$Maybe$Nothing, pid: _elm_lang$core$Maybe$Nothing});
@@ -4624,7 +4607,9 @@ var _binary_koan$elm_spruce$Spruce_Server$handleEvents = F3(
 	});
 var _binary_koan$elm_spruce$Spruce_Server$listen = F2(
 	function (address, router) {
-		return _binary_koan$elm_spruce$Native_Spruce.listen(
+		return A2(
+			_binary_koan$elm_spruce$Native_Spruce.listen,
+			address,
 			{
 				onRequest: function (req) {
 					return A2(
