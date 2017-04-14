@@ -8,6 +8,7 @@ module Spruce exposing (..)
 -}
 
 import Spruce.Server exposing (..)
+import Spruce.Middleware exposing (..)
 
 
 {-| Server
@@ -18,7 +19,7 @@ type alias Server =
 
 {-| Create a basic server which uses middleware to handle requests
 -}
-listen : String -> List Middleware -> Server
+listen : String -> Middleware -> Server
 listen address middleware =
     Platform.program
         { init = initialState address middleware

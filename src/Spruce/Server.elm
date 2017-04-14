@@ -3,31 +3,13 @@ effect module Spruce.Server where { subscription = MySub } exposing (..)
 import Process
 import Task exposing (Task)
 import Native.Spruce
-
-
--- TEMPORARY, until I figure out what format to use for requests
-
-
-type alias Request =
-    String
-
-
-type alias Response =
-    { body : String }
-
-
-plainText : String -> Response
-plainText body =
-    { body = body }
+import Spruce.Request exposing (..)
+import Spruce.Response exposing (..)
+import Spruce.Middleware exposing (..)
 
 
 type MySub msg
-    = Listen String (List Middleware) (Request -> msg)
-
-
-type Middleware
-    = EmptyMiddleware
-    | Middleware (Middleware -> Request -> Task Never Response)
+    = Listen String Middleware (Request -> msg)
 
 
 type alias Model =
@@ -40,12 +22,12 @@ type Msg
     | OnRequest Request
 
 
-initialState : String -> List Middleware -> ( Model, Cmd Msg )
+initialState : String -> Middleware -> ( Model, Cmd Msg )
 initialState address middleware =
     ( { lastRequest = Nothing }, Cmd.none )
 
 
-updater : List Middleware -> Msg -> Model -> ( Model, Cmd Msg )
+updater : Middleware -> Msg -> Model -> ( Model, Cmd Msg )
 updater middleware msg model =
     case msg of
         OnRequest req ->
@@ -55,7 +37,7 @@ updater middleware msg model =
             ( model, Cmd.none )
 
 
-handleEvents : String -> List Middleware -> Model -> Sub Msg
+handleEvents : String -> Middleware -> Model -> Sub Msg
 handleEvents address middleware _ =
     subscription (Listen address middleware OnRequest)
 
@@ -107,7 +89,7 @@ onEffects router newSubs oldState =
                     ( address, middleware, Just sub )
 
                 Nothing ->
-                    ( "", [ EmptyMiddleware ], Nothing )
+                    ( "", NoMiddleware, Nothing )
     in
         if List.length newSubs /= 1 || oldState.serverStarted then
             Native.Spruce.explode "You need to start exactly one server right now ..."
@@ -125,7 +107,7 @@ onSelfMsg router msg state =
 --
 
 
-attemptListen : Platform.Router msg Msg -> List Middleware -> String -> Task x Process.Id
+attemptListen : Platform.Router msg Msg -> Middleware -> String -> Task x Process.Id
 attemptListen router middleware address =
     let
         goodOpen ws =
@@ -142,22 +124,17 @@ attemptListen router middleware address =
         Process.spawn actuallyAttemptListen
 
 
-listen : String -> List Middleware -> Platform.Router msg Msg -> Task x Process.Id
+listen : String -> Middleware -> Platform.Router msg Msg -> Task x Process.Id
 listen address middleware router =
-    let
-        firstMiddleware =
-            Maybe.withDefault EmptyMiddleware (List.head middleware)
-    in
-        Native.Spruce.listen address
-            -- { onRequest = \req -> Platform.sendToSelf router (OnRequest req) }
-            { onRequest = \req -> runMiddleware firstMiddleware req }
+    Native.Spruce.listen address
+        { onRequest = \req -> runMiddleware middleware req }
 
 
 runMiddleware : Middleware -> Request -> Task Never Response
 runMiddleware middleware req =
     case middleware of
         Middleware fn ->
-            fn EmptyMiddleware req
+            fn NoMiddleware req
 
-        EmptyMiddleware ->
+        NoMiddleware ->
             Task.succeed <| plainText "404"
