@@ -2,6 +2,7 @@ effect module Spruce.Server where { subscription = MySub } exposing (..)
 
 import Process
 import Task exposing (Task)
+import Native.Spruce
 
 
 -- TEMPORARY, until I figure out what format to use for requests
@@ -20,42 +21,31 @@ type Middleware
 
 
 type alias Model =
-    {}
+    { lastRequest : Maybe Request }
 
 
 type Msg
     = NoOp
     | CannotStartServer CannotStartReason
-    | OnRequest String
-
-
-type alias Updater =
-    Msg -> Model -> ( Model, Cmd Msg )
+    | OnRequest Request
 
 
 initialState : String -> List Middleware -> ( Model, Cmd Msg )
 initialState address middleware =
-    ( {}, Cmd.none )
+    ( { lastRequest = Nothing }, Cmd.none )
 
 
-updater : List Middleware -> Updater
-updater middleware =
-    \msg model -> ( model, Cmd.none )
+updater : List Middleware -> Msg -> Model -> (Model, Cmd Msg)
+updater middleware msg model =
+    case msg of
+        OnRequest req -> Debug.log "requested" ({ model | lastRequest = Just req }, Cmd.none)
+
+        _ -> (model, Cmd.none)
 
 
-handleEvents : String -> List Middleware -> Sub Msg
-handleEvents address middleware =
+handleEvents : String -> List Middleware -> Model -> Sub Msg
+handleEvents address middleware _ =
     subscription (Listen address OnRequest)
-
-
-handleListenResult : Result CannotStartReason () -> Msg
-handleListenResult result =
-    case result of
-        Ok _ ->
-            NoOp
-
-        Err reason ->
-            CannotStartServer reason
 
 
 

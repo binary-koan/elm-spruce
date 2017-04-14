@@ -8,7 +8,6 @@ module Spruce exposing (..)
 -}
 
 import Spruce.Server exposing (..)
-import Native.Spruce
 
 
 {-| Server
@@ -24,5 +23,5 @@ listen address middleware =
      Platform.program
         { init = initialState address middleware
         , update = updater middleware
-        , subscriptions = handleEvents middleware
+        , subscriptions = handleEvents address middleware
         }

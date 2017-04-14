@@ -6,40 +6,19 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
         throw message
     }
 
-    function listen(address, program) {
+    function listen(address, settings) {
         return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback) {
-            const server = http
+            const server = http.createServer((request, response) => {
+                console.log(request, response)
 
-            try
-            {
-                var socket = new WebSocket(url);
-                socket.elm_web_socket = true;
-            }
-            catch(err)
-            {
-                return callback(_elm_lang$core$Native_Scheduler.fail({
-                    ctor: err.name === 'SecurityError' ? 'BadSecurity' : 'BadArgs',
-                    _0: err.message
-                }));
-            }
+                _elm_lang$core$Native_Scheduler.rawSpawn(settings.onRequest(request.url))
+            })
 
-            socket.addEventListener("open", function(event) {
-                callback(_elm_lang$core$Native_Scheduler.succeed(socket));
-            });
+            const [hostname, port] = address.split(":")
 
-            socket.addEventListener("message", function(event) {
-                _elm_lang$core$Native_Scheduler.rawSpawn(A2(settings.onMessage, socket, event.data));
-            });
-
-            socket.addEventListener("close", function(event) {
-                _elm_lang$core$Native_Scheduler.rawSpawn(settings.onClose({
-                    code: event.code,
-                    reason: event.reason,
-                    wasClean: event.wasClean
-                }));
-            });
-
-            return program;
+            server.listen(port, () => {
+                callback(_elm_lang$core$Native_Scheduler.succeed(null))
+            })
         });
     }
 
