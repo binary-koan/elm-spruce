@@ -20,7 +20,7 @@ type alias Server =
 -}
 listen : String -> List Middleware -> Server
 listen address middleware =
-     Platform.program
+    Platform.program
         { init = initialState address middleware
         , update = updater middleware
         , subscriptions = handleEvents address middleware

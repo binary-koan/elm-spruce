@@ -12,12 +12,22 @@ type alias Request =
     String
 
 
+type alias Response =
+    { body : String }
+
+
+plainText : String -> Response
+plainText body =
+    { body = body }
+
+
 type MySub msg
-    = Listen String (Request -> msg)
+    = Listen String (List Middleware) (Request -> msg)
 
 
 type Middleware
     = EmptyMiddleware
+    | Middleware (Middleware -> Request -> Task Never Response)
 
 
 type alias Model =
@@ -35,17 +45,19 @@ initialState address middleware =
     ( { lastRequest = Nothing }, Cmd.none )
 
 
-updater : List Middleware -> Msg -> Model -> (Model, Cmd Msg)
+updater : List Middleware -> Msg -> Model -> ( Model, Cmd Msg )
 updater middleware msg model =
     case msg of
-        OnRequest req -> Debug.log "requested" ({ model | lastRequest = Just req }, Cmd.none)
+        OnRequest req ->
+            Debug.log "requested" ( { model | lastRequest = Just req }, Cmd.none )
 
-        _ -> (model, Cmd.none)
+        _ ->
+            ( model, Cmd.none )
 
 
 handleEvents : String -> List Middleware -> Model -> Sub Msg
 handleEvents address middleware _ =
-    subscription (Listen address OnRequest)
+    subscription (Listen address middleware OnRequest)
 
 
 
@@ -82,25 +94,25 @@ init =
 subMap : (a -> b) -> MySub a -> MySub b
 subMap fn sub =
     case sub of
-        Listen address tagger ->
-            Listen address (tagger >> fn)
+        Listen address middleware tagger ->
+            Listen address middleware (tagger >> fn)
 
 
 onEffects : Platform.Router msg Msg -> List (MySub msg) -> State msg -> Task Never (State msg)
 onEffects router newSubs oldState =
     let
-        ( address, sub ) =
+        ( address, middleware, sub ) =
             case List.head newSubs of
-                Just (Listen address sub) ->
-                    ( address, Just sub )
+                Just (Listen address middleware sub) ->
+                    ( address, middleware, Just sub )
 
                 Nothing ->
-                    ( "", Nothing )
+                    ( "", [ EmptyMiddleware ], Nothing )
     in
         if List.length newSubs /= 1 || oldState.serverStarted then
             Native.Spruce.explode "You need to start exactly one server right now ..."
         else
-            attemptListen router address
+            attemptListen router middleware address
                 |> Task.andThen (\pid -> Task.succeed { serverStarted = True, sub = sub, pid = Just pid })
 
 
@@ -113,8 +125,8 @@ onSelfMsg router msg state =
 --
 
 
-attemptListen : Platform.Router msg Msg -> String -> Task x Process.Id
-attemptListen router address =
+attemptListen : Platform.Router msg Msg -> List Middleware -> String -> Task x Process.Id
+attemptListen router middleware address =
     let
         goodOpen ws =
             Platform.sendToSelf router NoOp
@@ -123,14 +135,29 @@ attemptListen router address =
             Platform.sendToSelf router (CannotStartServer UnknownError)
 
         actuallyAttemptListen =
-            listen address router
+            listen address middleware router
                 |> Task.andThen goodOpen
                 |> Task.onError badOpen
     in
         Process.spawn actuallyAttemptListen
 
 
-listen : String -> Platform.Router msg Msg -> Task x Process.Id
-listen address router =
-    Native.Spruce.listen address
-        { onRequest = \req -> Platform.sendToSelf router (OnRequest req) }
+listen : String -> List Middleware -> Platform.Router msg Msg -> Task x Process.Id
+listen address middleware router =
+    let
+        firstMiddleware =
+            Maybe.withDefault EmptyMiddleware (List.head middleware)
+    in
+        Native.Spruce.listen address
+            -- { onRequest = \req -> Platform.sendToSelf router (OnRequest req) }
+            { onRequest = \req -> runMiddleware firstMiddleware req }
+
+
+runMiddleware : Middleware -> Request -> Task Never Response
+runMiddleware middleware req =
+    case middleware of
+        Middleware fn ->
+            fn EmptyMiddleware req
+
+        EmptyMiddleware ->
+            Task.succeed <| plainText "404"

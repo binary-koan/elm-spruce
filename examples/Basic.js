@@ -4472,6 +4472,8 @@ var _elm_lang$core$Process$sleep = _elm_lang$core$Native_Scheduler.sleep;
 var _elm_lang$core$Process$spawn = _elm_lang$core$Native_Scheduler.spawn;
 
 const _binary_koan$elm_spruce$Native_Spruce = function() {
+    const { nativeBinding, rawSpawn, andThen, succeed } = _elm_lang$core$Native_Scheduler
+
     const http = require("http")
 
     function explode(message) {
@@ -4480,18 +4482,25 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     }
 
     function listen(address, settings) {
-        return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback) {
-            const server = http.createServer((request, response) => {
-                console.log(settings.onRequest(request.url))
+        function handleResponse(response, elmResponse) {
+            response.end(elmResponse.body)
+            return succeed(null)
+        }
 
-                _elm_lang$core$Native_Scheduler.rawSpawn(settings.onRequest(request.url))
+        return nativeBinding(function(callback) {
+            const server = http.createServer((request, response) => {
+                rawSpawn(A2(
+                    andThen,
+                    handleResponse.bind(null, response),
+                    settings.onRequest(request.url)
+                ))
             })
 
             const [hostname, port] = address.split(":")
 
             server.listen(port, () => {
                 console.log(`Listening on port ${port}`)
-                callback(_elm_lang$core$Native_Scheduler.succeed(null))
+                callback(succeed(null))
             })
         });
     }
@@ -4534,10 +4543,7 @@ var _elm_lang$core$Tuple$first = function (_p6) {
 
 var _binary_koan$elm_spruce$Spruce_Server$onSelfMsg = F3(
 	function (router, msg, state) {
-		return A2(
-			_elm_lang$core$Debug$log,
-			'selfMsg',
-			_elm_lang$core$Task$succeed(state));
+		return _elm_lang$core$Task$succeed(state);
 	});
 var _binary_koan$elm_spruce$Spruce_Server$init = _elm_lang$core$Task$succeed(
 	{serverStarted: false, sub: _elm_lang$core$Maybe$Nothing, pid: _elm_lang$core$Maybe$Nothing});
@@ -4569,7 +4575,13 @@ var _binary_koan$elm_spruce$Spruce_Server$initialState = F2(
 			_1: _elm_lang$core$Platform_Cmd$none
 		};
 	});
+var _binary_koan$elm_spruce$Spruce_Server$plainText = function (body) {
+	return {body: body};
+};
 var _binary_koan$elm_spruce$Spruce_Server$subscription = _elm_lang$core$Native_Platform.leaf('Spruce.Server');
+var _binary_koan$elm_spruce$Spruce_Server$Response = function (a) {
+	return {body: a};
+};
 var _binary_koan$elm_spruce$Spruce_Server$Model = function (a) {
 	return {lastRequest: a};
 };
@@ -4581,52 +4593,67 @@ var _binary_koan$elm_spruce$Spruce_Server$Watcher = F2(
 	function (a, b) {
 		return {taggers: a, pid: b};
 	});
-var _binary_koan$elm_spruce$Spruce_Server$Listen = F2(
-	function (a, b) {
-		return {ctor: 'Listen', _0: a, _1: b};
+var _binary_koan$elm_spruce$Spruce_Server$Listen = F3(
+	function (a, b, c) {
+		return {ctor: 'Listen', _0: a, _1: b, _2: c};
 	});
 var _binary_koan$elm_spruce$Spruce_Server$subMap = F2(
 	function (fn, sub) {
 		var _p1 = sub;
-		return A2(
+		return A3(
 			_binary_koan$elm_spruce$Spruce_Server$Listen,
 			_p1._0,
+			_p1._1,
 			function (_p2) {
 				return fn(
-					_p1._1(_p2));
+					_p1._2(_p2));
 			});
 	});
-var _binary_koan$elm_spruce$Spruce_Server$EmptyMiddleware = {ctor: 'EmptyMiddleware'};
-var _binary_koan$elm_spruce$Spruce_Server$OnRequest = function (a) {
-	return {ctor: 'OnRequest', _0: a};
+var _binary_koan$elm_spruce$Spruce_Server$Middleware = function (a) {
+	return {ctor: 'Middleware', _0: a};
 };
-var _binary_koan$elm_spruce$Spruce_Server$handleEvents = F3(
-	function (address, middleware, _p3) {
-		return _binary_koan$elm_spruce$Spruce_Server$subscription(
-			A2(_binary_koan$elm_spruce$Spruce_Server$Listen, address, _binary_koan$elm_spruce$Spruce_Server$OnRequest));
+var _binary_koan$elm_spruce$Spruce_Server$EmptyMiddleware = {ctor: 'EmptyMiddleware'};
+var _binary_koan$elm_spruce$Spruce_Server$runMiddleware = F2(
+	function (middleware, req) {
+		var _p3 = middleware;
+		if (_p3.ctor === 'Middleware') {
+			return A2(_p3._0, _binary_koan$elm_spruce$Spruce_Server$EmptyMiddleware, req);
+		} else {
+			return _elm_lang$core$Task$succeed(
+				_binary_koan$elm_spruce$Spruce_Server$plainText('404'));
+		}
 	});
-var _binary_koan$elm_spruce$Spruce_Server$listen = F2(
-	function (address, router) {
+var _binary_koan$elm_spruce$Spruce_Server$listen = F3(
+	function (address, middleware, router) {
+		var firstMiddleware = A2(
+			_elm_lang$core$Maybe$withDefault,
+			_binary_koan$elm_spruce$Spruce_Server$EmptyMiddleware,
+			_elm_lang$core$List$head(middleware));
 		return A2(
 			_binary_koan$elm_spruce$Native_Spruce.listen,
 			address,
 			{
 				onRequest: function (req) {
-					return A2(
-						_elm_lang$core$Platform$sendToSelf,
-						router,
-						_binary_koan$elm_spruce$Spruce_Server$OnRequest(req));
+					return A2(_binary_koan$elm_spruce$Spruce_Server$runMiddleware, firstMiddleware, req);
 				}
 			});
+	});
+var _binary_koan$elm_spruce$Spruce_Server$OnRequest = function (a) {
+	return {ctor: 'OnRequest', _0: a};
+};
+var _binary_koan$elm_spruce$Spruce_Server$handleEvents = F3(
+	function (address, middleware, _p4) {
+		return _binary_koan$elm_spruce$Spruce_Server$subscription(
+			A3(_binary_koan$elm_spruce$Spruce_Server$Listen, address, middleware, _binary_koan$elm_spruce$Spruce_Server$OnRequest));
 	});
 var _binary_koan$elm_spruce$Spruce_Server$CannotStartServer = function (a) {
 	return {ctor: 'CannotStartServer', _0: a};
 };
 var _binary_koan$elm_spruce$Spruce_Server$NoOp = {ctor: 'NoOp'};
 var _binary_koan$elm_spruce$Spruce_Server$UnknownError = {ctor: 'UnknownError'};
-var _binary_koan$elm_spruce$Spruce_Server$attemptListen = F2(
-	function (router, address) {
-		var badOpen = function (_p4) {
+var _binary_koan$elm_spruce$Spruce_Server$attemptListen = F3(
+	function (router, middleware, address) {
+		var badOpen = function (_p5) {
 			return A2(
 				_elm_lang$core$Platform$sendToSelf,
 				router,
@@ -4641,25 +4668,36 @@ var _binary_koan$elm_spruce$Spruce_Server$attemptListen = F2(
 			A2(
 				_elm_lang$core$Task$andThen,
 				goodOpen,
-				A2(_binary_koan$elm_spruce$Spruce_Server$listen, address, router)));
+				A3(_binary_koan$elm_spruce$Spruce_Server$listen, address, middleware, router)));
 		return _elm_lang$core$Process$spawn(actuallyAttemptListen);
 	});
 var _binary_koan$elm_spruce$Spruce_Server$onEffects = F3(
 	function (router, newSubs, oldState) {
-		var _p5 = function () {
-			var _p6 = _elm_lang$core$List$head(newSubs);
-			if (_p6.ctor === 'Just') {
+		var _p6 = function () {
+			var _p7 = _elm_lang$core$List$head(newSubs);
+			if (_p7.ctor === 'Just') {
 				return {
-					ctor: '_Tuple2',
-					_0: _p6._0._0,
-					_1: _elm_lang$core$Maybe$Just(_p6._0._1)
+					ctor: '_Tuple3',
+					_0: _p7._0._0,
+					_1: _p7._0._1,
+					_2: _elm_lang$core$Maybe$Just(_p7._0._2)
 				};
 			} else {
-				return {ctor: '_Tuple2', _0: '', _1: _elm_lang$core$Maybe$Nothing};
+				return {
+					ctor: '_Tuple3',
+					_0: '',
+					_1: {
+						ctor: '::',
+						_0: _binary_koan$elm_spruce$Spruce_Server$EmptyMiddleware,
+						_1: {ctor: '[]'}
+					},
+					_2: _elm_lang$core$Maybe$Nothing
+				};
 			}
 		}();
-		var address = _p5._0;
-		var sub = _p5._1;
+		var address = _p6._0;
+		var middleware = _p6._1;
+		var sub = _p6._2;
 		return ((!_elm_lang$core$Native_Utils.eq(
 			_elm_lang$core$List$length(newSubs),
 			1)) || oldState.serverStarted) ? _binary_koan$elm_spruce$Native_Spruce.explode('You need to start exactly one server right now ...') : A2(
@@ -4672,7 +4710,7 @@ var _binary_koan$elm_spruce$Spruce_Server$onEffects = F3(
 						pid: _elm_lang$core$Maybe$Just(pid)
 					});
 			},
-			A2(_binary_koan$elm_spruce$Spruce_Server$attemptListen, router, address));
+			A3(_binary_koan$elm_spruce$Spruce_Server$attemptListen, router, middleware, address));
 	});
 var _binary_koan$elm_spruce$Spruce_Server$AddressInUse = {ctor: 'AddressInUse'};
 _elm_lang$core$Native_Platform.effectManagers['Spruce.Server'] = {pkg: 'binary-koan/elm-spruce', init: _binary_koan$elm_spruce$Spruce_Server$init, onEffects: _binary_koan$elm_spruce$Spruce_Server$onEffects, onSelfMsg: _binary_koan$elm_spruce$Spruce_Server$onSelfMsg, tag: 'sub', subMap: _binary_koan$elm_spruce$Spruce_Server$subMap};
@@ -4687,10 +4725,19 @@ var _binary_koan$elm_spruce$Spruce$listen = F2(
 			});
 	});
 
+var _binary_koan$elm_spruce$Basic$helloMiddleware = F2(
+	function (next, req) {
+		return _elm_lang$core$Task$succeed(
+			_binary_koan$elm_spruce$Spruce_Server$plainText('Hello!'));
+	});
 var _binary_koan$elm_spruce$Basic$main = A2(
 	_binary_koan$elm_spruce$Spruce$listen,
 	'localhost:4000',
-	{ctor: '[]'})();
+	{
+		ctor: '::',
+		_0: _binary_koan$elm_spruce$Spruce_Server$Middleware(_binary_koan$elm_spruce$Basic$helloMiddleware),
+		_1: {ctor: '[]'}
+	})();
 
 var Elm = {};
 Elm['Basic'] = Elm['Basic'] || {};
