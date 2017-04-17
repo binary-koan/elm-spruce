@@ -1,140 +1,51 @@
-effect module Spruce.Server where { subscription = MySub } exposing (..)
+module Spruce.Server exposing (..)
 
 import Process
 import Task exposing (Task)
 import Native.Spruce
-import Spruce.Request exposing (..)
-import Spruce.Response exposing (..)
 import Spruce.Middleware exposing (..)
-
-
-type MySub msg
-    = Listen String Middleware (Request -> msg)
-
-
-type alias Model =
-    { lastRequest : Maybe Request }
 
 
 type Msg
     = NoOp
-    | CannotStartServer CannotStartReason
-    | OnRequest Request
 
 
-initialState : String -> Middleware -> ( Model, Cmd Msg )
-initialState address middleware =
-    ( { lastRequest = Nothing }, Cmd.none )
-
-
-updater : Middleware -> Msg -> Model -> ( Model, Cmd Msg )
-updater middleware msg model =
-    case msg of
-        OnRequest req ->
-            Debug.log "requested" ( { model | lastRequest = Just req }, Cmd.none )
-
-        _ ->
-            ( model, Cmd.none )
-
-
-handleEvents : String -> Middleware -> Model -> Sub Msg
-handleEvents address middleware _ =
-    subscription (Listen address middleware OnRequest)
-
-
-
--- Native bindings
-
-
-type CannotStartReason
-    = AddressInUse
-    | UnknownError
-
-
-
--- Effect module stuff
-
-
-type alias State msg =
-    { serverStarted : Bool
-    , sub : Maybe (Request -> msg)
-    , pid : Maybe Process.Id
+type alias Server =
+    { middleware : MiddlewareFn
+    , onStart : List (Cmd Msg)
     }
 
 
-type alias Watcher msg =
-    { taggers : List (String -> msg)
-    , pid : Process.Id
+type alias RunningServer =
+    Program Never {} Msg
+
+
+server : MiddlewareFn -> Server
+server middleware =
+    { middleware = middleware
+    , onStart = []
     }
 
 
-init : Task Never (State msg)
-init =
-    Task.succeed { serverStarted = False, sub = Nothing, pid = Nothing }
+run : Server -> RunningServer
+run server =
+    Platform.program
+        { init = ( {}, Cmd.batch server.onStart )
+        , update = \_ _ -> ( {}, Cmd.none )
+        , subscriptions = always Sub.none
+        }
 
 
-subMap : (a -> b) -> MySub a -> MySub b
-subMap fn sub =
-    case sub of
-        Listen address middleware tagger ->
-            Listen address middleware (tagger >> fn)
-
-
-onEffects : Platform.Router msg Msg -> List (MySub msg) -> State msg -> Task Never (State msg)
-onEffects router newSubs oldState =
+listen : String -> Server -> Server
+listen address server =
     let
-        ( address, middleware, sub ) =
-            case List.head newSubs of
-                Just (Listen address middleware sub) ->
-                    ( address, middleware, Just sub )
-
-                Nothing ->
-                    ( "", NoMiddleware, Nothing )
+        handleStart =
+            Task.perform (always NoOp) (startListening address server.middleware)
     in
-        if List.length newSubs /= 1 || oldState.serverStarted then
-            Native.Spruce.explode "You need to start exactly one server right now ..."
-        else
-            attemptListen router middleware address
-                |> Task.andThen (\pid -> Task.succeed { serverStarted = True, sub = sub, pid = Just pid })
+        { server | onStart = handleStart :: server.onStart }
 
 
-onSelfMsg : Platform.Router msg Msg -> Msg -> State msg -> Task Never (State msg)
-onSelfMsg router msg state =
-    Task.succeed state
-
-
-
---
-
-
-attemptListen : Platform.Router msg Msg -> Middleware -> String -> Task x Process.Id
-attemptListen router middleware address =
-    let
-        goodOpen ws =
-            Platform.sendToSelf router NoOp
-
-        badOpen _ =
-            Platform.sendToSelf router (CannotStartServer UnknownError)
-
-        actuallyAttemptListen =
-            listen address middleware router
-                |> Task.andThen goodOpen
-                |> Task.onError badOpen
-    in
-        Process.spawn actuallyAttemptListen
-
-
-listen : String -> Middleware -> Platform.Router msg Msg -> Task x Process.Id
-listen address middleware router =
+startListening : String -> MiddlewareFn -> Task Never Process.Id
+startListening address middleware =
     Native.Spruce.listen address
-        { onRequest = \req -> runMiddleware middleware req }
-
-
-runMiddleware : Middleware -> Request -> Task Never Response
-runMiddleware middleware req =
-    case middleware of
-        Middleware fn ->
-            fn NoMiddleware req
-
-        NoMiddleware ->
-            Task.succeed <| plainText "404"
+        { onRequest = \req -> middleware NoMiddleware req }

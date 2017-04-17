@@ -1,16 +1,17 @@
 module Basic exposing (..)
 
-import Spruce exposing (..)
-import Spruce.Middleware exposing (..)
+import Spruce.Server exposing (..)
 import Spruce.Request exposing (..)
 import Spruce.Response exposing (..)
 import Task exposing (Task)
 
-helloMiddleware : Middleware -> Request -> Task Never Response
-helloMiddleware next req =
+sayHello : Request -> Task Never Response
+sayHello req =
     Task.succeed <| plainText "Hello!"
 
 
-main : Server
+main : RunningServer
 main =
-    listen "localhost:4000" (Middleware helloMiddleware)
+    server (always sayHello)
+        |> listen "localhost:4000"
+        |> run

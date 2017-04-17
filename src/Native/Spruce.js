@@ -29,7 +29,7 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
                 console.log(`Listening on port ${port}`)
                 callback(succeed(null))
             })
-        });
+        })
     }
 
     return {

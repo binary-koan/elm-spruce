@@ -6,4 +6,7 @@ import Spruce.Response exposing (..)
 
 type Middleware
     = NoMiddleware
-    | Middleware (Middleware -> Request -> Task Never Response)
+    | DefinedMiddleware MiddlewareFn
+
+type alias MiddlewareFn
+    = Middleware -> Request -> Task Never Response
