@@ -4,18 +4,28 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     const http = require("http")
 
     function listen(address, settings) {
-        function handleResponse(response, elmResponse) {
-            response.end(elmResponse.body)
+        function encodeRequest(request, callback) {
+            const { url, method, httpVersion, headers, trailers } = request
+            const body = "" //TODO body parsing
+            callback(JSON.stringify({ url, method, httpVersion, headers, trailers, body }))
+        }
+
+        function handleResponse(response, encodedResponse) {
+            const value = JSON.parse(encodedResponse)
+
+            response.end(value.body)
             return succeed(null)
         }
 
         return nativeBinding(function(callback) {
             const server = http.createServer((request, response) => {
-                rawSpawn(A2(
-                    andThen,
-                    handleResponse.bind(null, response),
-                    settings.onRequest(request.url)
-                ))
+                encodeRequest(request, encoded => {
+                    rawSpawn(A2(
+                        andThen,
+                        handleResponse.bind(null, response),
+                        settings.onRequest(encoded)
+                    ))
+                })
             })
 
             const [hostname, port] = address.split(":")

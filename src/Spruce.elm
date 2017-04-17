@@ -7,9 +7,8 @@ module Spruce exposing (Server, RunningServer, server, run, listen)
 
 -}
 
-import Process
 import Task exposing (Task)
-import Native.Spruce
+import Spruce.Bridge as Bridge
 import Spruce.Middleware exposing (..)
 
 
@@ -57,12 +56,6 @@ listen : String -> Server -> Server
 listen address server =
     let
         handleStart =
-            Task.perform (always NoOp) (startListening address server.middleware)
+            Task.perform (always NoOp) (Bridge.listen address server.middleware)
     in
         { server | onStart = handleStart :: server.onStart }
-
-
-startListening : String -> MiddlewareFn -> Task Never Process.Id
-startListening address middleware =
-    Native.Spruce.listen address
-        { onRequest = \req -> middleware NoMiddleware req }
