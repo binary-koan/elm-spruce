@@ -1,6 +1,6 @@
 module Basic exposing (..)
 
-import Spruce.Server exposing (..)
+import Spruce exposing (..)
 import Spruce.Request exposing (..)
 import Spruce.Response exposing (..)
 import Task exposing (Task)
