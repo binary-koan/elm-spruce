@@ -5,9 +5,12 @@ import Spruce.Request exposing (..)
 import Spruce.Response exposing (..)
 import Task exposing (Task)
 
+
 sayHello : Request -> Task Never Response
 sayHello req =
-    Task.succeed <| plainText "Hello!"
+    response
+        |> text "Hello!"
+        |> Task.succeed
 
 
 main : RunningServer
