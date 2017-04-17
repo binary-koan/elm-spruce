@@ -3,11 +3,6 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
 
     const http = require("http")
 
-    function explode(message) {
-        //TODO handle subs properly
-        throw message
-    }
-
     function listen(address, settings) {
         function handleResponse(response, elmResponse) {
             response.end(elmResponse.body)
@@ -33,7 +28,6 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     }
 
     return {
-        explode: explode,
         listen: F2(listen)
     }
 }()

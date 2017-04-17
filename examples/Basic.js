@@ -4476,11 +4476,6 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
 
     const http = require("http")
 
-    function explode(message) {
-        //TODO handle subs properly
-        throw message
-    }
-
     function listen(address, settings) {
         function handleResponse(response, elmResponse) {
             response.end(elmResponse.body)
@@ -4506,7 +4501,6 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     }
 
     return {
-        explode: explode,
         listen: F2(listen)
     }
 }()
@@ -4541,20 +4535,34 @@ var _elm_lang$core$Tuple$first = function (_p6) {
 	return _p7._0;
 };
 
+var _binary_koan$elm_spruce$Spruce_Request$Request = F6(
+	function (a, b, c, d, e, f) {
+		return {url: a, method: b, httpVersion: c, headers: d, trailers: e, body: f};
+	});
 
-var _binary_koan$elm_spruce$Spruce_Response$plainText = function (body) {
-	return {body: body};
+var _binary_koan$elm_spruce$Spruce_Response$text = F2(
+	function (body, response) {
+		return _elm_lang$core$Native_Utils.update(
+			response,
+			{body: body});
+	});
+var _binary_koan$elm_spruce$Spruce_Response$Response = F4(
+	function (a, b, c, d) {
+		return {status: a, headers: b, trailers: c, body: d};
+	});
+var _binary_koan$elm_spruce$Spruce_Response$CustomStatus = function (a) {
+	return {ctor: 'CustomStatus', _0: a};
 };
-var _binary_koan$elm_spruce$Spruce_Response$Response = function (a) {
-	return {body: a};
-};
+var _binary_koan$elm_spruce$Spruce_Response$NotFound = {ctor: 'NotFound'};
+var _binary_koan$elm_spruce$Spruce_Response$Ok = {ctor: 'Ok'};
+var _binary_koan$elm_spruce$Spruce_Response$response = {status: _binary_koan$elm_spruce$Spruce_Response$Ok, headers: _elm_lang$core$Dict$empty, trailers: _elm_lang$core$Dict$empty, body: ''};
 
 var _binary_koan$elm_spruce$Spruce_Middleware$DefinedMiddleware = function (a) {
 	return {ctor: 'DefinedMiddleware', _0: a};
 };
 var _binary_koan$elm_spruce$Spruce_Middleware$NoMiddleware = {ctor: 'NoMiddleware'};
 
-var _binary_koan$elm_spruce$Spruce_Server$startListening = F2(
+var _binary_koan$elm_spruce$Spruce$startListening = F2(
 	function (address, middleware) {
 		return A2(
 			_binary_koan$elm_spruce$Native_Spruce.listen,
@@ -4565,7 +4573,7 @@ var _binary_koan$elm_spruce$Spruce_Server$startListening = F2(
 				}
 			});
 	});
-var _binary_koan$elm_spruce$Spruce_Server$run = function (server) {
+var _binary_koan$elm_spruce$Spruce$run = function (server) {
 	return _elm_lang$core$Platform$program(
 		{
 			init: {
@@ -4584,23 +4592,23 @@ var _binary_koan$elm_spruce$Spruce_Server$run = function (server) {
 			subscriptions: _elm_lang$core$Basics$always(_elm_lang$core$Platform_Sub$none)
 		});
 };
-var _binary_koan$elm_spruce$Spruce_Server$server = function (middleware) {
+var _binary_koan$elm_spruce$Spruce$server = function (middleware) {
 	return {
 		middleware: middleware,
 		onStart: {ctor: '[]'}
 	};
 };
-var _binary_koan$elm_spruce$Spruce_Server$Server = F2(
+var _binary_koan$elm_spruce$Spruce$Server = F2(
 	function (a, b) {
 		return {middleware: a, onStart: b};
 	});
-var _binary_koan$elm_spruce$Spruce_Server$NoOp = {ctor: 'NoOp'};
-var _binary_koan$elm_spruce$Spruce_Server$listen = F2(
+var _binary_koan$elm_spruce$Spruce$NoOp = {ctor: 'NoOp'};
+var _binary_koan$elm_spruce$Spruce$listen = F2(
 	function (address, server) {
 		var handleStart = A2(
 			_elm_lang$core$Task$perform,
-			_elm_lang$core$Basics$always(_binary_koan$elm_spruce$Spruce_Server$NoOp),
-			A2(_binary_koan$elm_spruce$Spruce_Server$startListening, address, server.middleware));
+			_elm_lang$core$Basics$always(_binary_koan$elm_spruce$Spruce$NoOp),
+			A2(_binary_koan$elm_spruce$Spruce$startListening, address, server.middleware));
 		return _elm_lang$core$Native_Utils.update(
 			server,
 			{
@@ -4610,13 +4618,13 @@ var _binary_koan$elm_spruce$Spruce_Server$listen = F2(
 
 var _binary_koan$elm_spruce$Basic$sayHello = function (req) {
 	return _elm_lang$core$Task$succeed(
-		_binary_koan$elm_spruce$Spruce_Response$plainText('Hello!'));
+		A2(_binary_koan$elm_spruce$Spruce_Response$text, 'Hello!', _binary_koan$elm_spruce$Spruce_Response$response));
 };
-var _binary_koan$elm_spruce$Basic$main = _binary_koan$elm_spruce$Spruce_Server$run(
+var _binary_koan$elm_spruce$Basic$main = _binary_koan$elm_spruce$Spruce$run(
 	A2(
-		_binary_koan$elm_spruce$Spruce_Server$listen,
+		_binary_koan$elm_spruce$Spruce$listen,
 		'localhost:4000',
-		_binary_koan$elm_spruce$Spruce_Server$server(
+		_binary_koan$elm_spruce$Spruce$server(
 			_elm_lang$core$Basics$always(_binary_koan$elm_spruce$Basic$sayHello))))();
 
 var Elm = {};
