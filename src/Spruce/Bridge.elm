@@ -77,7 +77,7 @@ encodeResponse response =
     Task.succeed <|
         E.encode 0
             (E.object
-                [ ( "status", E.int (statusCode response.status) )
+                [ ( "statusCode", E.int (statusCode response.status) )
                 , ( "headers", encodeDict response.headers )
                 , ( "trailers", encodeDict response.trailers )
                 , ( "body", E.string response.body )

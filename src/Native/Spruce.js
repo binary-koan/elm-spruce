@@ -15,7 +15,10 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
         function handleResponse(response, encodedResponse) {
             const value = JSON.parse(encodedResponse)
 
-            response.end(value.body)
+            response.writeHead(value.statusCode, value.headers)
+            response.write(value.body)
+            response.addTrailers(value.trailers)
+            response.end()
             return succeed(null)
         }
 
