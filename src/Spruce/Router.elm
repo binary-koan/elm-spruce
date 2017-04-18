@@ -72,7 +72,7 @@ pathToRegex path =
     let
         substituted = Regex.replace All (regex ":\\w+") (always "([^/]+)") path
     in
-        regex <| Debug.log "regex" <| ("^" ++ substituted ++ "$")
+        regex ("^" ++ substituted ++ "$")
 
 
 matchRoute : Request -> List Route -> Maybe MiddlewareFn
@@ -94,4 +94,4 @@ matches route req =
         methodMatches =
             req.method == route.method || (req.method == "HEAD" && route.method == "GET")
     in
-        Debug.log req.url <| methodMatches && (Regex.contains route.path req.url)
+        methodMatches && (Regex.contains route.path req.url.path)

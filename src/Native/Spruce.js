@@ -2,12 +2,14 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     const { nativeBinding, rawSpawn, andThen, succeed } = _elm_lang$core$Native_Scheduler
 
     const http = require("http")
+    const parseUrl = require("url").parse
 
     function listen(address, settings) {
         function encodeRequest(request, callback) {
             const { url, method, httpVersion, headers, trailers } = request
             const body = "" //TODO body parsing
-            callback(JSON.stringify({ url, method, httpVersion, headers, trailers, body }))
+            const parsedUrl = parseUrl(url, true)
+            callback(JSON.stringify({ url: parsedUrl, method, httpVersion, headers, trailers, body }))
         }
 
         function handleResponse(response, encodedResponse) {
