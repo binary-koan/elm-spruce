@@ -7,9 +7,14 @@ const _binary_koan$elm_spruce$Native_Spruce = function() {
     function listen(address, settings) {
         function encodeRequest(request, callback) {
             const { url, method, httpVersion, headers, trailers } = request
-            const body = "" //TODO body parsing
             const parsedUrl = parseUrl(url, true)
-            callback(JSON.stringify({ url: parsedUrl, method, httpVersion, headers, trailers, body }))
+
+            let body = ""
+            request.on("data", buf => body += buf.toString())
+            request.on("end", () => {
+                callback(JSON.stringify({ url: parsedUrl, method, httpVersion, headers, trailers, body }))
+            })
+            //TODO do we care about error/abort events? Or is not handling the request the right thing to do?
         }
 
         function handleResponse(response, encodedResponse) {
