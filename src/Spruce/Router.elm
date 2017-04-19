@@ -8,16 +8,16 @@ import Spruce.Request exposing (..)
 type alias Route =
     { method : String
     , path : Regex
-    , fn : MiddlewareFn
+    , fn : Middleware
     }
 
 
-router : List ( String, MiddlewareFn ) -> MiddlewareFn
+router : List ( String, Middleware ) -> Middleware
 router routes =
     handler (parseRoutes routes)
 
 
-handler : List Route -> MiddlewareFn
+handler : List Route -> Middleware
 handler routes =
     \next req ->
         case matchRoute req routes of
@@ -28,12 +28,12 @@ handler routes =
                 continue next req
 
 
-parseRoutes : List ( String, MiddlewareFn ) -> List Route
+parseRoutes : List ( String, Middleware ) -> List Route
 parseRoutes routes =
     List.filterMap parseRoute routes
 
 
-parseRoute : ( String, MiddlewareFn ) -> Maybe Route
+parseRoute : ( String, Middleware ) -> Maybe Route
 parseRoute ( desc, fn ) =
     let
         allowedMethods =
@@ -75,7 +75,7 @@ pathToRegex path =
         regex ("^" ++ substituted ++ "$")
 
 
-matchRoute : Request -> List Route -> Maybe MiddlewareFn
+matchRoute : Request -> List Route -> Maybe Middleware
 matchRoute req routes =
     case routes of
         [] ->

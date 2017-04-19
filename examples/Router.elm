@@ -22,7 +22,7 @@ showProject req =
         |> Task.succeed
 
 
-routes : MiddlewareFn
+routes : Middleware
 routes =
     router
         [ ( "GET /", always homepage )
@@ -30,8 +30,16 @@ routes =
         ]
 
 
+handle404 : Request -> Task Never Response
+handle404 req =
+    response
+        |> text "Not found."
+        |> status NotFound
+        |> Task.succeed
+
+
 main : RunningServer
 main =
-    server routes
+    server [routes, (always handle404)]
         |> listen "localhost:4000"
         |> run

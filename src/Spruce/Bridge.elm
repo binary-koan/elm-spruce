@@ -22,16 +22,21 @@ type alias RawRequest =
     }
 
 
-listen : String -> MiddlewareFn -> Task Never Process.Id
+listen : String -> MiddlewareChain -> Task String Process.Id
 listen address middleware =
-    Native.Spruce.listen address
-        { onRequest = handleRequest middleware }
+    case middleware of
+        NoMiddleware ->
+            Task.fail <| Debug.log "ERROR" "I can't listen because your server has no middleware to handle requests."
+
+        ChainedMiddleware fn ->
+            Native.Spruce.listen address
+                { onRequest = handleRequest fn }
 
 
-handleRequest : MiddlewareFn -> String -> Task Never String
+handleRequest : (Request -> Task Never Response) -> String -> Task Never String
 handleRequest middleware raw =
     decodeRequest raw
-        |> Result.map (middleware NoMiddleware)
+        |> Result.map middleware
         |> Result.mapError
             (\e -> Debug.log ("ERROR: Native.Spruce produced an invalid request. " ++ e) raw)
         |> Result.withDefault (Task.succeed defaultResponse)

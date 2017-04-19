@@ -3,7 +3,7 @@ module Spruce exposing (Server, RunningServer, server, run, listen)
 {-| Description description description. Do it later, but don't forget!
 
 # Basics
-@docs Server, RunningServer, server, run, listen
+@docs Server, RunningServer, server, listen, run
 
 -}
 
@@ -19,7 +19,7 @@ type Msg
 {-| Server
 -}
 type alias Server =
-    { middleware : MiddlewareFn
+    { middleware : MiddlewareChain
     , onStart : List (Cmd Msg)
     }
 
@@ -32,11 +32,21 @@ type alias RunningServer =
 
 {-| server
 -}
-server : MiddlewareFn -> Server
+server : List Middleware -> Server
 server middleware =
-    { middleware = middleware
+    { middleware = compose middleware
     , onStart = []
     }
+
+{-| listen
+-}
+listen : String -> Server -> Server
+listen address server =
+    let
+        handleStart =
+            Task.attempt (always NoOp) (Bridge.listen address server.middleware)
+    in
+        { server | onStart = handleStart :: server.onStart }
 
 
 {-| run
@@ -48,14 +58,3 @@ run server =
         , update = \_ _ -> ( {}, Cmd.none )
         , subscriptions = always Sub.none
         }
-
-
-{-| listen
--}
-listen : String -> Server -> Server
-listen address server =
-    let
-        handleStart =
-            Task.perform (always NoOp) (Bridge.listen address server.middleware)
-    in
-        { server | onStart = handleStart :: server.onStart }
