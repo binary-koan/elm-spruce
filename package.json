@@ -1,0 +1,18 @@
+{
+  "name": "elm-spruce",
+  "version": "0.1.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binary-koan/elm-spruce.git"
+  },
+  "author": "Jono Mingard <reason.koan@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "node-fetch": "^1.6.3",
+    "proxyquire": "^1.7.11",
+    "tape": "^4.6.3"
+  }
+}

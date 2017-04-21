@@ -1,5 +1,6 @@
-# elm-package generated files
+# package files
 elm-stuff/
+node_modules/
 # elm-repl generated files
 repl-temp-*
 # compiled examples
