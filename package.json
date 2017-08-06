@@ -2,6 +2,8 @@
   "name": "elm-spruce",
   "version": "0.1.0",
   "scripts": {
+    "examples:build": "node scripts/examples/build.js",
+    "examples:run": "node scripts/examples/run.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
