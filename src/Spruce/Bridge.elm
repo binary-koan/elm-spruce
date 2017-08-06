@@ -1,7 +1,6 @@
-module Spruce.Bridge exposing (listen)
+module Spruce.Bridge exposing (NativeServer, listen, createServer)
 
 import Dict exposing (Dict)
-import Process
 import Task exposing (Task)
 import Json.Decode exposing (Decoder, decodeString, field, string, dict)
 import Json.Decode.Pipeline exposing (decode, required, optional)
@@ -10,6 +9,13 @@ import Native.Spruce
 import Spruce.Middleware exposing (..)
 import Spruce.Request exposing (Request, Url)
 import Spruce.Response exposing (..)
+
+
+type NativeServer = NativeServer
+
+
+type alias NativeServerOpts =
+    { onRequest : String -> Task Never String }
 
 
 type alias RawRequest =
@@ -22,15 +28,24 @@ type alias RawRequest =
     }
 
 
-listen : String -> MiddlewareChain -> Task String Process.Id
+listen : String -> MiddlewareChain -> Task String NativeServer
 listen address middleware =
+    buildNativeServer (Native.Spruce.listen address) middleware
+
+
+createServer : MiddlewareChain -> Task String NativeServer
+createServer middleware =
+    buildNativeServer Native.Spruce.createServer middleware
+
+
+buildNativeServer : (NativeServerOpts -> Task String NativeServer) -> MiddlewareChain -> Task String NativeServer
+buildNativeServer builder middleware =
     case middleware of
         NoMiddleware ->
             Task.fail <| Debug.log "ERROR" "I can't listen because your server has no middleware to handle requests."
 
         ChainedMiddleware fn ->
-            Native.Spruce.listen address
-                { onRequest = handleRequest fn }
+            builder { onRequest = handleRequest fn }
 
 
 handleRequest : (Request -> Task Never Response) -> String -> Task Never String

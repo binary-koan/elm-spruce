@@ -11,6 +11,8 @@
   "author": "Jono Mingard <reason.koan@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "cross-spawn": "^5.1.0",
+    "node-elm-compiler": "^4.3.1",
     "node-fetch": "^1.6.3",
     "proxyquire": "^1.7.11",
     "tape": "^4.6.3"

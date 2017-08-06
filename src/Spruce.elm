@@ -1,4 +1,4 @@
-module Spruce exposing (Server, RunningServer, server, run, listen)
+module Spruce exposing (Server, RunningServer, server, run, listen, createServer)
 
 {-|
 Spruce is a library which allows you to write your server in Elm. It wraps the
@@ -8,7 +8,7 @@ Node.js `http` module, so it needs to be run using Node.
 @docs Server, RunningServer
 
 # Basic functions
-@docs server, listen, run
+@docs server, listen, run, createServer
 -}
 
 import Task exposing (Task)
@@ -68,6 +68,14 @@ listen address server =
             Task.attempt (always NoOp) (Bridge.listen address server.middleware)
     in
         { server | onStart = handleStart :: server.onStart }
+
+
+{-|
+Just returns a native Node server.
+-}
+createServer : Server -> Task String Bridge.NativeServer
+createServer server =
+    Bridge.createServer server.middleware
 
 
 {-|
