@@ -11,7 +11,8 @@ import Spruce.Request exposing (Request, Url)
 import Spruce.Response exposing (..)
 
 
-type NativeServer = NativeServer
+type NativeServer
+    = NativeServer
 
 
 type alias NativeServerOpts =
@@ -89,7 +90,7 @@ decodeUrl =
 defaultResponse : Response
 defaultResponse =
     -- TODO what should we actually do if there's a bug in the bridge/native code?
-    response |> status ServerError
+    { emptyResponse | status = 500 }
 
 
 encodeResponse : Response -> Task Never String
@@ -97,7 +98,7 @@ encodeResponse response =
     Task.succeed <|
         E.encode 0
             (E.object
-                [ ( "statusCode", E.int (statusCode response.status) )
+                [ ( "statusCode", E.int response.status )
                 , ( "headers", encodeDict response.headers )
                 , ( "trailers", encodeDict response.trailers )
                 , ( "body", E.string response.body )

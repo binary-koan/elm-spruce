@@ -48,6 +48,7 @@ server middleware =
     , onStart = []
     }
 
+
 {-|
 Adds a command to listen on the given address when the server is started.
 

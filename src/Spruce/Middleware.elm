@@ -27,7 +27,7 @@ continue : MiddlewareChain -> Request -> Task Never Response
 continue middleware req =
     case middleware of
         NoMiddleware ->
-            response |> status NotFound |> Task.succeed
+            { emptyResponse | status = 404 } |> Task.succeed
 
         ChainedMiddleware fn ->
             fn req
