@@ -1,4 +1,4 @@
-module Spruce.Router exposing (router)
+module Spruce.Router exposing (router, parseRoutes)
 
 import Regex exposing (Regex, HowMany(..), regex)
 import Spruce.Middleware exposing (..)
@@ -70,7 +70,8 @@ parseRoute ( desc, fn ) =
 pathToRegex : String -> Regex
 pathToRegex path =
     let
-        substituted = Regex.replace All (regex ":\\w+") (always "([^/]+)") path
+        substituted =
+            Regex.replace All (regex ":\\w+") (always "([^/]+)") path
     in
         regex ("^" ++ substituted ++ "$")
 
