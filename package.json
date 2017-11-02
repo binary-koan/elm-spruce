@@ -14,7 +14,6 @@
   "license": "MIT",
   "devDependencies": {
     "elm": "^0.18.0",
-    "elm-test": "^0.18.7",
-    "node-elm-compiler": "^4.3.1"
+    "elm-test": "^0.18.9"
   }
 }
