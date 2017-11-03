@@ -1,11 +1,14 @@
 module Spruce.Routing.Router exposing (..)
 
 import Spruce.Routing.Steps exposing (Step(..))
-import Spruce.Middleware exposing (Middleware, MiddlewareChain(..))
 import Spruce.Request exposing (Request)
 import Spruce.Response exposing (Response, emptyResponse)
 import Task exposing (Task)
 import Regex exposing (..)
+
+
+type alias Router =
+    Request -> Task Never Response
 
 
 type alias RoutingContext =

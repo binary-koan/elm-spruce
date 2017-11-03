@@ -13,7 +13,9 @@ Node.js `http` module, so it needs to be run using Node.
 
 import Task exposing (Task)
 import Spruce.Bridge as Bridge
-import Spruce.Middleware exposing (..)
+import Spruce.Request exposing (Request)
+import Spruce.Response exposing (Response)
+import Spruce.Routing.Router exposing (..)
 
 
 type Msg
@@ -24,7 +26,7 @@ type Msg
 Used for building a web server, which can be started with `run`.
 -}
 type alias Server =
-    { middleware : MiddlewareChain
+    { router : Router
     , onStart : List (Cmd Msg)
     }
 
@@ -42,9 +44,9 @@ Middleware will be composed left-to-right, so the first bit of middleware in
 the list will be queried first. Its `next` reference will point to the next
 item in the list, and so on.
 -}
-server : List Middleware -> Server
-server middleware =
-    { middleware = compose middleware
+server : Router -> Server
+server router =
+    { router = router
     , onStart = []
     }
 
@@ -66,7 +68,7 @@ listen : String -> Server -> Server
 listen address server =
     let
         handleStart =
-            Task.attempt (always NoOp) (Bridge.listen address server.middleware)
+            Task.attempt (always NoOp) (Bridge.listen address server.router)
     in
         { server | onStart = handleStart :: server.onStart }
 
@@ -76,7 +78,7 @@ Just returns a native Node server.
 -}
 createServer : Server -> Task String Bridge.NativeServer
 createServer server =
-    Bridge.createServer server.middleware
+    Bridge.createServer server.router
 
 
 {-|

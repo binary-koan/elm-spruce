@@ -6,7 +6,7 @@ import Json.Decode exposing (Decoder, decodeString, field, string, dict)
 import Json.Decode.Pipeline exposing (decode, required, optional)
 import Json.Encode as E
 import Native.Spruce
-import Spruce.Middleware exposing (..)
+import Spruce.Routing.Router exposing (..)
 import Spruce.Request exposing (Request, Url)
 import Spruce.Response exposing (..)
 
@@ -29,30 +29,25 @@ type alias RawRequest =
     }
 
 
-listen : String -> MiddlewareChain -> Task String NativeServer
-listen address middleware =
-    buildNativeServer (Native.Spruce.listen address) middleware
+listen : String -> Router -> Task String NativeServer
+listen address router =
+    buildNativeServer (Native.Spruce.listen address) router
 
 
-createServer : MiddlewareChain -> Task String NativeServer
-createServer middleware =
-    buildNativeServer Native.Spruce.createServer middleware
+createServer : Router -> Task String NativeServer
+createServer router =
+    buildNativeServer Native.Spruce.createServer router
 
 
-buildNativeServer : (NativeServerOpts -> Task String NativeServer) -> MiddlewareChain -> Task String NativeServer
-buildNativeServer builder middleware =
-    case middleware of
-        NoMiddleware ->
-            Task.fail <| Debug.log "ERROR" "I can't listen because your server has no middleware to handle requests."
-
-        ChainedMiddleware fn ->
-            builder { onRequest = handleRequest fn }
+buildNativeServer : (NativeServerOpts -> Task String NativeServer) -> Router -> Task String NativeServer
+buildNativeServer builder router =
+    builder { onRequest = handleRequest router }
 
 
-handleRequest : (Request -> Task Never Response) -> String -> Task Never String
-handleRequest middleware raw =
+handleRequest : Router -> String -> Task Never String
+handleRequest router raw =
     decodeRequest raw
-        |> Result.map middleware
+        |> Result.map router
         |> Result.mapError
             (\e -> Debug.log ("ERROR: Native.Spruce produced an invalid request. " ++ e) raw)
         |> Result.withDefault (Task.succeed defaultResponse)

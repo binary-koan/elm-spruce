@@ -1,7 +1,6 @@
 module Main exposing (..)
 
 import Spruce exposing (..)
-import Spruce.Middleware exposing (..)
 import Spruce.Routing.Router exposing (..)
 import Spruce.Routing.Steps exposing (..)
 
@@ -16,18 +15,18 @@ showProject id =
     [ text ("Project " ++ id ++ "!") ]
 
 
-routes : Middleware
+routes : Router
 routes =
     router
         [ root homepage
         , on "projects"
-            [ onParam "id" (\id -> showProject id)
+            [ onParam (\id -> showProject id)
             ]
         ]
 
 
 main : RunningServer
 main =
-    server [ routes ]
+    server routes
         |> listen "localhost:4000"
         |> run
