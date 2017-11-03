@@ -24,7 +24,7 @@ type alias Response =
 
 emptyResponse : Response
 emptyResponse =
-    { status = 200
+    { status = 404
     , headers = Dict.empty
     , trailers = Dict.empty
     , body = ""

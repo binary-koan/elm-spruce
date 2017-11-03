@@ -8,19 +8,11 @@ import Dict exposing (Dict)
 
 type Step
     = OnPath String (List Step)
-    | OnParam String (String -> List Step)
+    | OnParam (String -> List Step)
     | PathMatched (List Step)
-    | OnMethod Method (List Step)
-    | WithRequest (Request -> List Step)
-    | Attempt (Task Never (List Step))
+    | OnMethod String (List Step)
+    | WithRequest (Request -> Task Never (List Step))
     | TransformResponse (Response -> Response)
-
-
-type Method
-    = GET
-    | POST
-    | PUT
-    | DELETE
 
 
 on : String -> List Step -> Step
@@ -28,9 +20,9 @@ on path steps =
     OnPath path steps
 
 
-onParam : String -> (String -> List Step) -> Step
-onParam name handler =
-    OnParam name handler
+onParam : (String -> List Step) -> Step
+onParam handler =
+    OnParam handler
 
 
 is : List Step -> Step
@@ -43,19 +35,14 @@ root =
     is
 
 
-method : Method -> List Step -> Step
+method : String -> List Step -> Step
 method m steps =
     OnMethod m steps
 
 
-withRequest : (Request -> List Step) -> Step
+withRequest : (Request -> Task Never (List Step)) -> Step
 withRequest handler =
     WithRequest handler
-
-
-attempt : Task Never (List Step) -> Step
-attempt task =
-    Attempt task
 
 
 text : String -> Step
