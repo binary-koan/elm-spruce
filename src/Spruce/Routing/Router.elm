@@ -48,6 +48,9 @@ runSteps context steps =
                 PathMatched steps ->
                     handlePathMatched ctx steps
 
+                RootMatched steps ->
+                    handleRootMatched ctx steps
+
                 OnMethod method steps ->
                     handleOnMethod ctx method steps
 
@@ -102,7 +105,15 @@ handleOnParam context handler =
 
 handlePathMatched : RoutingContext -> List Step -> Task Never RoutingContext
 handlePathMatched context steps =
-    if String.isEmpty context.remainingPath then
+    if String.isEmpty context.remainingPath || context.remainingPath == "/" then
+        runSteps context steps
+    else
+        succeed context
+
+
+handleRootMatched : RoutingContext -> List Step -> Task Never RoutingContext
+handleRootMatched context steps =
+    if context.request.url.path == "/" && context.remainingPath == "/" then
         runSteps context steps
     else
         succeed context

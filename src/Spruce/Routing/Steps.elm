@@ -10,6 +10,7 @@ type Step
     = OnPath String (List Step)
     | OnParam (String -> List Step)
     | PathMatched (List Step)
+    | RootMatched (List Step)
     | OnMethod String (List Step)
     | WithRequest (Request -> Task Never (List Step))
     | TransformResponse (Response -> Response)
@@ -31,8 +32,8 @@ is steps =
 
 
 root : List Step -> Step
-root =
-    is
+root steps =
+    RootMatched steps
 
 
 method : String -> List Step -> Step
