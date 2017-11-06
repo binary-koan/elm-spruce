@@ -2,7 +2,7 @@ module Spruce.Routing.Steps exposing (..)
 
 import Spruce.Request exposing (Request)
 import Spruce.Response exposing (Response)
-import Task exposing (Task)
+import Testable.Task exposing (Task)
 import Dict exposing (Dict)
 
 

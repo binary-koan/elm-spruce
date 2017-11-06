@@ -1,72 +1,80 @@
 module RouterTests exposing (..)
 
 import Test exposing (..)
+import Testable.Cmd
+import Testable.TestContext exposing (..)
+import Testable.Html exposing (node)
+import Testable.Task
 import Expect
-import Spruce.Router exposing (router, parseRoutes)
-import TestUtils exposing (..)
+import Dict
+import Spruce.Routing.Router exposing (..)
+import Spruce.Routing.Steps exposing (..)
+import Spruce.Request exposing (Request)
+import Spruce.Response exposing (Response, emptyResponse)
+
+
+testGet : String -> Request
+testGet path =
+    { url =
+        { protocol = "https"
+        , auth = ""
+        , host = ""
+        , hostname = ""
+        , port_ = ""
+        , hash = ""
+        , search = ""
+        , query = Dict.empty
+        , pathname = ""
+        , path = path
+        , href = ""
+        }
+    , method = "GET"
+    , httpVersion = "2"
+    , headers = Dict.empty
+    , trailers = Dict.empty
+    , body = ""
+    }
+
+
+type alias Msg =
+    Response
+
+
+type alias Model =
+    { response : Maybe Msg }
+
+
+testRouter : Router -> Request -> Component Msg Model
+testRouter router request =
+    { init = ( { response = Nothing }, Testable.Task.perform identity (router request) )
+    , update = (\response _ -> ( { response = Just response }, Testable.Cmd.none ))
+    , view = (\_ -> node "noop" [] [])
+    }
+
+
+testResponse : Router -> Request -> Response -> Expect.Expectation
+testResponse router request response =
+    assertCurrentModel { response = Just response } (startForTest (testRouter router request))
+
+
+textResponse : String -> Response
+textResponse text =
+    { emptyResponse | body = text }
 
 
 all : Test
 all =
     describe "Spruce Router"
-        [ describe "route parsing"
-            [ test "supported methods are parsed" <|
+        [ describe "root route"
+            [ test "the response is set when the request path is /" <|
                 let
-                    routes =
-                        parseRoutes
-                            [ ( "HEAD /", emptyMiddleware )
-                            , ( "OPTIONS /", emptyMiddleware )
-                            , ( "GET /", emptyMiddleware )
-                            , ( "PUT /", emptyMiddleware )
-                            , ( "PATCH /", emptyMiddleware )
-                            , ( "POST /", emptyMiddleware )
-                            , ( "DELETE /", emptyMiddleware )
-                            ]
+                    route =
+                        router [ root [ text "Root!" ] ]
+
+                    request =
+                        testGet "/"
                 in
                     \() ->
-                        Expect.equal (List.length routes) 7
-            , test "unsupported methods are ignored" <|
-                let
-                    routes =
-                        parseRoutes
-                            [ ( "GET /", emptyMiddleware )
-                            , ( "POST /", emptyMiddleware )
-                            , ( "BLAH /", emptyMiddleware )
-                            , ( "put /", emptyMiddleware )
-                            , ( "Hello /", emptyMiddleware )
-                            ]
-                in
-                    \() ->
-                        Expect.equal (List.length routes) 2
+                        testResponse route request (textResponse "Root!")
             ]
         ]
-
-
-
--- describe "Sample Test Suite"
---     [ describe "Unit test examples"
---         [ test "Addition" <|
---             \() ->
---                 Expect.equal (3 + 7) 10
---         , test "String.left" <|
---             \() ->
---                 Expect.equal "a" (String.left 1 "abcdefg")
---         , test "This test should fail - you should remove it" <|
---             \() ->
---                 Expect.fail "Failed as expected!"
---         ]
---     , describe "Fuzz test examples, using randomly generated input"
---         [ fuzz (list int) "Lists always have positive length" <|
---             \aList ->
---                 List.length aList |> Expect.atLeast 0
---         , fuzz (list int) "Sorting a list does not change its length" <|
---             \aList ->
---                 List.sort aList |> List.length |> Expect.equal (List.length aList)
---         , fuzzWith { runs = 1000 } int "List.member will find an integer in a list containing it" <|
---             \i ->
---                 List.member i [ i ] |> Expect.true "If you see this, List.member returned False!"
---         , fuzz2 string string "The length of a string equals the sum of its substrings' lengths" <|
---             \s1 s2 ->
---                 s1 ++ s2 |> String.length |> Expect.equal (String.length s1 + String.length s2)
---         ]
---     ]

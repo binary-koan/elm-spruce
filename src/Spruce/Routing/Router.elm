@@ -3,7 +3,7 @@ module Spruce.Routing.Router exposing (..)
 import Spruce.Routing.Steps exposing (Step(..))
 import Spruce.Request exposing (Request)
 import Spruce.Response exposing (Response, emptyResponse)
-import Task exposing (Task)
+import Testable.Task exposing (..)
 import Regex exposing (..)
 
 
@@ -19,21 +19,21 @@ type alias RoutingContext =
     }
 
 
-router : List Step -> Request -> Task Never Response
+router : List Step -> Router
 router steps request =
     runSteps (emptyContext request) steps
-        |> Task.andThen (Task.succeed << .response)
+        |> andThen (succeed << .response)
 
 
 runSteps : RoutingContext -> List Step -> Task Never RoutingContext
 runSteps context steps =
     let
         unwrapTask handler step task =
-            task |> Task.andThen (handler step)
+            task |> andThen (handler step)
 
         unlessFinished handler step ctx =
             if ctx.stopped then
-                Task.succeed ctx
+                succeed ctx
             else
                 handler step ctx
 
@@ -53,12 +53,12 @@ runSteps context steps =
 
                 WithRequest handler ->
                     handler ctx.request
-                        |> Task.andThen (runSteps ctx)
+                        |> andThen (runSteps ctx)
 
                 TransformResponse transformer ->
-                    Task.succeed { ctx | response = (transformer ctx.response) }
+                    succeed { ctx | response = (transformer ctx.response) }
     in
-        List.foldl (unwrapTask (unlessFinished nextStep)) (Task.succeed context) steps
+        List.foldl (unwrapTask (unlessFinished nextStep)) (succeed context) steps
 
 
 handleOnPath : RoutingContext -> String -> List Step -> Task Never RoutingContext
@@ -72,9 +72,9 @@ handleOnPath context path steps =
     in
         if matchesPath context.remainingPath then
             runSteps { context | remainingPath = pathWithoutMatch } steps
-                |> Task.andThen (\ctx -> Task.succeed { ctx | stopped = True })
+                |> andThen (\ctx -> succeed { ctx | stopped = True })
         else
-            Task.succeed context
+            succeed context
 
 
 handleOnParam : RoutingContext -> (String -> List Step) -> Task Never RoutingContext
@@ -97,7 +97,7 @@ handleOnParam context handler =
                 runSteps { context | remainingPath = pathWithoutMatch match } (handler (paramValue match))
 
             _ ->
-                Task.succeed context
+                succeed context
 
 
 handlePathMatched : RoutingContext -> List Step -> Task Never RoutingContext
@@ -105,7 +105,7 @@ handlePathMatched context steps =
     if String.isEmpty context.remainingPath then
         runSteps context steps
     else
-        Task.succeed context
+        succeed context
 
 
 handleOnMethod : RoutingContext -> String -> List Step -> Task Never RoutingContext
@@ -113,7 +113,7 @@ handleOnMethod context method steps =
     if String.toLower context.request.method == String.toLower method then
         runSteps context steps
     else
-        Task.succeed context
+        succeed context
 
 
 stopRouting : RoutingContext -> RoutingContext

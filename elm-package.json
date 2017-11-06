@@ -12,7 +12,11 @@
     "native-modules": true,
     "dependencies": {
         "NoRedInk/elm-decode-pipeline": "3.0.0 <= v < 4.0.0",
-        "elm-lang/core": "5.1.1 <= v < 6.0.0"
+        "elm-lang/core": "5.1.1 <= v < 6.0.0",
+        "rogeriochaves/elm-testable": "4.1.0 <= v < 5.0.0"
+    },
+    "dependency-sources": {
+        "rogeriochaves/elm-testable": "git@github.com:brtnik/elm-testable"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }
