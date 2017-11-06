@@ -67,13 +67,13 @@ runSteps context steps =
 handleOnPath : RoutingContext -> String -> List Step -> Task Never RoutingContext
 handleOnPath context path steps =
     let
-        matchesPath path =
-            String.startsWith ("/" ++ path) context.remainingPath
+        pathMatches =
+            String.startsWith path context.remainingPath && (String.isEmpty pathWithoutMatch || String.startsWith "/" pathWithoutMatch)
 
         pathWithoutMatch =
-            String.dropLeft (String.length path + 1) context.remainingPath
+            String.dropLeft (String.length path) context.remainingPath
     in
-        if matchesPath context.remainingPath then
+        if pathMatches then
             runSteps { context | remainingPath = pathWithoutMatch } steps
                 |> andThen (\ctx -> succeed { ctx | stopped = True })
         else

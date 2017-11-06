@@ -17,8 +17,8 @@ type Step
 
 
 on : String -> List Step -> Step
-on path steps =
-    OnPath path steps
+on fragment steps =
+    OnPath ("/" ++ fragment) steps
 
 
 onParam : (String -> List Step) -> Step
