@@ -1,20 +1,31 @@
-module Basic exposing (..)
+module Main exposing (..)
 
 import Spruce exposing (..)
-import Spruce.Request exposing (..)
-import Spruce.Response exposing (..)
-import Task exposing (Task)
+import Spruce.Routing.Steps exposing (..)
 
 
-sayHello : Request -> Task Never Response
-sayHello req =
-    response
-        |> text "Hello!"
-        |> Task.succeed
+homepage : List Step
+homepage =
+    [ text "Homepage!" ]
+
+
+showProject : String -> List Step
+showProject id =
+    [ text ("Project " ++ id ++ "!") ]
+
+
+app : Server
+app =
+    server
+        [ root homepage
+        , on "projects"
+            [ onParam (\id -> showProject id)
+            ]
+        ]
 
 
 main : RunningServer
 main =
-    server (always sayHello)
+    app
         |> listen "localhost:4000"
         |> run

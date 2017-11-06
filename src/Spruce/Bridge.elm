@@ -1,6 +1,7 @@
 module Spruce.Bridge exposing (NativeServer, listen, createServer)
 
 import Dict exposing (Dict)
+import Testable
 import Task exposing (Task)
 import Json.Decode exposing (Decoder, decodeString, field, string, dict)
 import Json.Decode.Pipeline exposing (decode, required, optional)
@@ -47,7 +48,7 @@ buildNativeServer builder router =
 handleRequest : Router -> String -> Task Never String
 handleRequest router raw =
     decodeRequest raw
-        |> Result.map router
+        |> Result.map (router >> Testable.task)
         |> Result.mapError
             (\e -> Debug.log ("ERROR: Native.Spruce produced an invalid request. " ++ e) raw)
         |> Result.withDefault (Task.succeed defaultResponse)

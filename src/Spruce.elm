@@ -13,9 +13,8 @@ Node.js `http` module, so it needs to be run using Node.
 
 import Task exposing (Task)
 import Spruce.Bridge as Bridge
-import Spruce.Request exposing (Request)
-import Spruce.Response exposing (Response)
 import Spruce.Routing.Router exposing (..)
+import Spruce.Routing.Steps exposing (Step)
 
 
 type Msg
@@ -44,9 +43,9 @@ Middleware will be composed left-to-right, so the first bit of middleware in
 the list will be queried first. Its `next` reference will point to the next
 item in the list, and so on.
 -}
-server : Router -> Server
-server router =
-    { router = router
+server : List Step -> Server
+server steps =
+    { router = router steps
     , onStart = []
     }
 

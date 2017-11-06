@@ -51,6 +51,17 @@ text body =
     TransformResponse (\response -> { response | body = body })
 
 
+html : String -> Step
+html body =
+    TransformResponse
+        (\response ->
+            { response
+                | body = body
+                , headers = Dict.insert "Content-Type" "text/html; charset=utf-8" response.headers
+            }
+        )
+
+
 status : Int -> Step
 status code =
     TransformResponse (\response -> { response | status = code })

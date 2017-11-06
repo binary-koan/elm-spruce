@@ -113,7 +113,7 @@ handlePathMatched context steps =
 
 handleRootMatched : RoutingContext -> List Step -> Task Never RoutingContext
 handleRootMatched context steps =
-    if context.request.url.path == "/" && context.remainingPath == "/" then
+    if context.request.url.pathname == "/" && context.remainingPath == "/" then
         runSteps context steps
     else
         succeed context
@@ -134,4 +134,4 @@ stopRouting context =
 
 emptyContext : Request -> RoutingContext
 emptyContext request =
-    { request = request, response = emptyResponse, remainingPath = request.url.path, stopped = False }
+    { request = request, response = emptyResponse, remainingPath = request.url.pathname, stopped = False }
