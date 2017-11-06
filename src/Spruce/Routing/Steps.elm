@@ -75,3 +75,8 @@ setHeader name value =
 setTrailer : String -> String -> Step
 setTrailer name value =
     TransformResponse (\response -> { response | trailers = Dict.insert name value response.trailers })
+
+
+redirect : String -> Step
+redirect url =
+    TransformResponse (\response -> { response | status = 302, headers = Dict.insert "Location" url response.headers })
