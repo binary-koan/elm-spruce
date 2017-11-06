@@ -1,6 +1,7 @@
 module RouterTests exposing (..)
 
 import Test exposing (..)
+import Fuzz exposing (string)
 import Testable.Cmd
 import Testable.TestContext exposing (..)
 import Testable.Html exposing (node)
@@ -52,8 +53,8 @@ testRouter router request =
     }
 
 
-testResponse : Router -> Request -> Response -> Expect.Expectation
-testResponse router request response =
+testResponse : Request -> Router -> Response -> Expect.Expectation
+testResponse request router response =
     assertCurrentModel { response = Just response } (startForTest (testRouter router request))
 
 
@@ -64,7 +65,7 @@ textResponse text =
 
 testGet : String -> List Step -> Response -> Expect.Expectation
 testGet path steps response =
-    testResponse (router steps) (testBasicRequest "GET" path) response
+    testResponse (testBasicRequest "GET" path) (router steps) response
 
 
 all : Test
@@ -90,6 +91,12 @@ all =
             , test "the response is not set when the request path matches only the first part" <|
                 \() -> testGet "/test" [ on "test" [ on "thing" [ text "Thing path!" ] ] ] emptyResponse
             ]
+        , describe "exact path matching"
+            [ test "the response is set when the path matches exactly" <|
+                \() -> testGet "/test" [ on "test" [ is [ text "Exact path!" ] ] ] (textResponse "Exact path!")
+            , test "the response is not set when the request path does not match exactly" <|
+                \() -> testGet "/test/thing" [ on "test" [ is [ text "Exact path!" ] ] ] emptyResponse
+            ]
         , describe "param matching"
             [ test "the param is set when a param is supplied" <|
                 \() -> testGet "/test/1" [ on "test" [ onParam (\id -> [ text id ]) ] ] (textResponse "1")
@@ -114,5 +121,19 @@ all =
                             ]
                         ]
                         (textResponse "1 2")
+            ]
+        , describe "method matching"
+            [ fuzz string "it matches a request with the correct method" <|
+                \randomMethod ->
+                    testResponse
+                        (testBasicRequest randomMethod "/")
+                        (router [ method randomMethod [ text randomMethod ] ])
+                        (textResponse randomMethod)
+            , fuzz string "it does not match a request with a different method" <|
+                \randomMethod ->
+                    testResponse
+                        (testBasicRequest (randomMethod ++ "a") "/")
+                        (router [ method randomMethod [ text randomMethod ] ])
+                        emptyResponse
             ]
         ]
